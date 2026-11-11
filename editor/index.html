@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Editor de rutas · Senderismo</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<link rel="stylesheet" href="editor.css">
+</head>
+<body>
+<div id="app">
+  <aside id="side">
+    <header>
+      <a class="home" href="../" title="Página de Senderismo">🥾</a>
+      <div>
+        <h1>Editor de rutas</h1>
+        <p class="muted">Dibuja o cambia una ruta y pásala a la app como «Ruta por hacer».</p>
+      </div>
+    </header>
+
+    <section class="files">
+      <button id="btn-new" title="Empezar una ruta vacía">Nueva</button>
+      <label class="button" title="Abrir un GPX (de Wikiloc, del reloj o exportado de la app). También puedes arrastrarlo al mapa.">
+        Abrir GPX<input id="file" type="file" accept=".gpx,application/gpx+xml,application/xml,text/xml" hidden>
+      </label>
+      <button id="btn-save" class="primary" title="Descargar la ruta en GPX">Guardar GPX</button>
+    </section>
+
+    <section>
+      <input id="name" type="text" placeholder="Nombre de la ruta" autocomplete="off">
+    </section>
+
+    <section id="stats" class="stats">
+      <div><b id="st-km">—</b><span>distancia</span></div>
+      <div><b id="st-up">—</b><span>subida</span></div>
+      <div><b id="st-down">—</b><span>bajada</span></div>
+      <div><b id="st-max">—</b><span>altitud máx.</span></div>
+      <div class="wide"><b id="st-time">—</b><span>tiempo MIDE (sin paradas)</span></div>
+    </section>
+    <p id="st-note" class="muted small"></p>
+
+    <section>
+      <h2>Perfil</h2>
+      <div id="profile"><p class="muted small">Aparecerá al dibujar la ruta.</p></div>
+    </section>
+
+    <section>
+      <h2>Paradas <span id="stops-count" class="muted"></span></h2>
+      <ul id="stops"></ul>
+      <p class="muted small" id="stops-empty">Con la herramienta «Parada», haz clic en el mapa: foto de grupo, almuerzo, aparcamiento…</p>
+    </section>
+
+    <section>
+      <details>
+        <summary>Cómo pasarla al móvil</summary>
+        <ol class="small">
+          <li>Pulsa <b>Guardar GPX</b>: se descarga un archivo.</li>
+          <li>Mándatelo al móvil (WhatsApp a ti mismo, Drive, correo…).</li>
+          <li>En el móvil, ábrelo o compártelo con <b>Senderismo</b> y elige <b>«Ruta por hacer»</b>.</li>
+        </ol>
+        <p class="small muted">Las paradas van dentro del GPX. Para cambiar en el ordenador una ruta de la app: en su ficha, «Exportar GPX», y ábrelo aquí.</p>
+      </details>
+      <details>
+        <summary>Atajos de teclado</summary>
+        <ul class="small keys">
+          <li><kbd>1</kbd>…<kbd>5</kbd> herramientas</li>
+          <li><kbd>Ctrl</kbd>+<kbd>Z</kbd> deshacer · <kbd>Ctrl</kbd>+<kbd>Y</kbd> rehacer</li>
+          <li><kbd>C</kbd> seguir caminos sí/no · <kbd>Esc</kbd> cerrar</li>
+        </ul>
+      </details>
+    </section>
+
+    <footer class="small muted">
+      Mapas: © OpenStreetMap, OpenTopoMap, IGN · Caminos: BRouter (datos © colaboradores de OpenStreetMap) ·
+      Altitudes: Open-Meteo · Búsqueda: Nominatim. Todo funciona en tu navegador: no se guarda nada fuera de este ordenador.
+    </footer>
+  </aside>
+
+  <main id="main">
+    <div id="toolbar">
+      <div class="tools" role="toolbar">
+        <button data-tool="anadir" title="Clic en el mapa: alarga la ruta (o mete un punto si haces clic encima). [1]">＋ Añadir</button>
+        <button data-tool="mover" title="Arrastra los puntos (se ven al acercarte). [2]">✋ Mover</button>
+        <button data-tool="quitar" title="Clic en un punto para borrarlo. [3]">✕ Quitar</button>
+        <button data-tool="cortar" title="Clic en la ruta: quitar lo de antes o lo de después. [4]">✂ Cortar</button>
+        <button data-tool="parada" title="Clic en el mapa para poner una parada; clic en una para cambiarla. [5]">📍 Parada</button>
+      </div>
+      <div class="actions">
+        <button id="btn-follow" title="Al añadir, ir por las sendas (BRouter). [C]"></button>
+        <button id="btn-undo" title="Deshacer [Ctrl+Z]">↶</button>
+        <button id="btn-redo" title="Rehacer [Ctrl+Y]">↷</button>
+        <button id="btn-reverse" title="Hacer la ruta al revés">⇄ Invertir</button>
+        <button id="btn-fit" title="Ver la ruta entera">⤢</button>
+      </div>
+      <form id="search" autocomplete="off">
+        <input id="search-q" type="search" placeholder="Buscar un sitio (pueblo, pico…)">
+        <ul id="search-results"></ul>
+      </form>
+    </div>
+    <div id="map"></div>
+    <div id="hint"></div>
+    <div id="busy" hidden>Buscando el camino…</div>
+    <div id="drop" hidden>Suelta el GPX para abrirlo</div>
+  </main>
+</div>
+
+<div id="modal" hidden>
+  <div class="box">
+    <h3 id="modal-title"></h3>
+    <div id="modal-body"></div>
+    <div id="modal-buttons"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script type="module" src="editor.js"></script>
+</body>
+</html>
