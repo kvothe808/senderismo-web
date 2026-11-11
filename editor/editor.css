@@ -87,3 +87,19 @@ footer { margin-top: 16px; line-height: 1.4; }
   #main { height: 75vh; }
   #search { width: 100%; margin-left: 0; }
 }
+
+/* Leyenda del mapa */
+.legend { background: #fff; border-radius: 10px; box-shadow: 0 1px 5px rgba(0,0,0,.3); font-size: 13px; max-width: 290px; }
+.legend summary { padding: 6px 12px; color: var(--text); font-weight: 600; user-select: none; }
+.legend[open] summary { border-bottom: 1px solid var(--border); }
+.legend .lg-body { padding: 4px 12px 8px; max-height: 55vh; overflow-y: auto; }
+.legend h3 { font-size: 12px; margin: 8px 0 3px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.legend ul { list-style: none; margin: 0; padding: 0; }
+.legend li { display: flex; align-items: center; gap: 8px; padding: 1px 0; }
+.legend .lg-sym { flex: none; width: 38px; display: inline-flex; justify-content: center; align-items: center; min-height: 18px; }
+.legend .lg-emojis { font-size: 12px; white-space: nowrap; letter-spacing: -2px; }
+.legend .lg-area { display: inline-block; width: 26px; height: 12px; border: 1px solid; border-radius: 2px; }
+.legend .lg-txt { font-size: 14px; font-weight: 700; }
+.legend .lg-h .h { display: block; }
+.legend .lg-note { color: var(--muted); font-size: 12px; margin: 6px 0 0; }
+.legend a { color: var(--plan); }

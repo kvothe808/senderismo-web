@@ -85,8 +85,97 @@ map.attributionControl.setPrefix(false);
 const savedLayer = localStorage.getItem('editor-capa');
 (LAYERS[savedLayer] ?? LAYERS['Topo (OpenTopoMap)']).addTo(map);
 L.control.layers(LAYERS, null, { position: 'topright' }).addTo(map);
-map.on('baselayerchange', (e) => localStorage.setItem('editor-capa', e.name));
+map.on('baselayerchange', (e) => { localStorage.setItem('editor-capa', e.name); renderLegend(e.name); });
 L.control.scale({ imperial: false }).addTo(map);
+
+// Leyenda (desplegable abajo a la derecha). Lo de «Tu ruta» es exacto; lo de cada
+// mapa, solo lo principal, con enlace a la leyenda oficial completa.
+const sw = {
+  line: (c, w = 4, dash = '') => `<svg width="34" height="12"><line x1="2" y1="6" x2="32" y2="6" stroke="${c}" stroke-width="${w}" stroke-linecap="round"${dash ? ` stroke-dasharray="${dash}"` : ''}/></svg>`,
+  road: (fill, casing) => `<svg width="34" height="12"><line x1="2" y1="6" x2="32" y2="6" stroke="${casing}" stroke-width="8"/><line x1="2" y1="6" x2="32" y2="6" stroke="${fill}" stroke-width="6"/></svg>`,
+  rail: () => `<svg width="34" height="12"><line x1="2" y1="6" x2="32" y2="6" stroke="#707070" stroke-width="4"/><line x1="2" y1="6" x2="32" y2="6" stroke="#fff" stroke-width="2" stroke-dasharray="5 4"/></svg>`,
+  area: (c, border = 'rgba(0,0,0,.12)') => `<span class="lg-area" style="background:${c};border-color:${border}"></span>`,
+  text: (t, c) => `<span class="lg-txt" style="color:${c}">${t}</span>`,
+};
+const LEGENDS = {
+  'Calles (OpenStreetMap)': {
+    items: [
+      [sw.road('#e892a2', '#dc2a67'), 'Autopista / autovía'],
+      [sw.road('#f9b29c', '#c84e2f'), 'Carretera nacional'],
+      [sw.road('#fcd6a4', '#a06b00'), 'Carretera principal'],
+      [sw.road('#f7fabf', '#707d05'), 'Carretera secundaria'],
+      [sw.line('#996600', 2, '6 5'), 'Pista (camino de tierra)'],
+      [sw.line('salmon', 2, '3 3.5'), 'Sendero / camino a pie'],
+      [sw.line('green', 2, '4 2'), 'Camino de herradura'],
+      [sw.line('blue', 2, '3 3.5'), 'Carril bici'],
+      [sw.rail(), 'Ferrocarril'],
+      [sw.area('#add19e'), 'Bosque'],
+      [sw.area('#cdebb0'), 'Prado / hierba'],
+      [sw.area('#eef0d5'), 'Cultivos'],
+      [sw.area('#c8facc'), 'Parque'],
+      [sw.area('#aad3df'), 'Agua'],
+      [sw.line('#8d618b', 3), 'Límite administrativo'],
+    ],
+    link: ['https://www.openstreetmap.org/#map=13/38.7/-0.47', 'Leyenda completa en openstreetmap.org (botón «Leyenda» de la derecha)'],
+  },
+  'Topo (OpenTopoMap)': {
+    items: [
+      [sw.line('#a0785a', 1.5), 'Curvas de nivel (más juntas = más pendiente)'],
+      [sw.line('#333', 1.5, '5 3'), 'Pistas y senderos (discontinuos)'],
+      [sw.area('#c3dfa6'), 'Bosque'],
+      [sw.area('#a5c8e6'), 'Agua'],
+      [sw.text('▲', '#333'), 'Cima, con su altitud'],
+    ],
+    note: 'Sombreado: el relieve, como si le diera el sol desde el noroeste.',
+    link: ['https://opentopomap.org/about#legende', 'Leyenda completa de OpenTopoMap (en alemán)'],
+  },
+  'IGN (topográfico)': {
+    items: [
+      [sw.line('#b07a4a', 1.5), 'Curvas de nivel'],
+      [sw.line('#c62828', 4), 'Carreteras (rojo, naranja, amarillo según importancia)'],
+      [sw.line('#222', 1.5, '5 3'), 'Pistas, caminos y sendas (en negro)'],
+      [sw.area('#cfe5b0'), 'Vegetación'],
+      [sw.area('#9fcbe8'), 'Agua'],
+      [sw.text('△', '#222'), 'Vértice geodésico'],
+    ],
+    note: 'Según el zoom se ve el mapa 1:25.000, 1:50.000 o más general, y los signos cambian un poco.',
+    link: ['https://www.ign.es/web/resources/movil/leyenda_espana_vectorial.pdf', 'Signos convencionales del IGN (PDF)'],
+  },
+  'Satélite (PNOA)': {
+    items: [],
+    note: 'Es una foto aérea del IGN: no tiene leyenda.',
+  },
+};
+const ROUTE_LEGEND = [
+  [sw.line(PLAN, 5), 'Tu ruta'],
+  [`<svg width="34" height="16"><circle cx="17" cy="8" r="7" fill="${START}" stroke="#fff" stroke-width="2"/></svg>`, 'Salida'],
+  [`<svg width="34" height="18"><circle cx="17" cy="9" r="7" fill="none" stroke="${END}" stroke-width="3"/></svg>`, 'Llegada'],
+  [`<span class="lg-h"><span class="h"></span></span>`, 'Punto de la ruta (Mover / Quitar)'],
+];
+const legendCtl = L.control({ position: 'bottomright' });
+legendCtl.onAdd = () => {
+  const d = L.DomUtil.create('details', 'legend');
+  d.innerHTML = '<summary>🗺️ Leyenda</summary><div class="lg-body"></div>';
+  L.DomEvent.disableClickPropagation(d);
+  L.DomEvent.disableScrollPropagation(d);
+  try { d.open = localStorage.getItem('editor-leyenda') === '1'; } catch {}
+  d.addEventListener('toggle', () => { try { localStorage.setItem('editor-leyenda', d.open ? '1' : '0'); } catch {} });
+  return d;
+};
+legendCtl.addTo(map);
+renderLegend(LAYERS[savedLayer] ? savedLayer : 'Topo (OpenTopoMap)');
+function renderLegend(layerName) {
+  const box = legendCtl.getContainer().querySelector('.lg-body');
+  const row = ([sym, label]) => `<li><span class="lg-sym">${sym}</span>${esc(label)}</li>`;
+  const lg = LEGENDS[layerName];
+  const stopsRow = `<li><span class="lg-sym lg-emojis">${STOP_KINDS.slice(0, 3).map((k) => WAYPOINT_KINDS[k].icon).join('')}</span>Paradas (ver la lista a la izquierda)</li>`;
+  box.innerHTML = `<h3>Tu ruta</h3><ul>${ROUTE_LEGEND.map(row).join('')}${stopsRow}</ul>`
+    + (lg ? `<h3>Mapa: ${esc(layerName)}</h3>`
+      + (lg.items.length ? `<ul>${lg.items.map(row).join('')}</ul>` : '')
+      + (lg.note ? `<p class="lg-note">${esc(lg.note)}</p>` : '')
+      + (lg.link ? `<p class="lg-note"><a href="${lg.link[0]}" target="_blank" rel="noopener">${esc(lg.link[1])} ↗</a></p>` : '')
+      : '');
+}
 
 const renderer = L.canvas({ padding: 0.5 });
 const line = L.polyline([], { color: PLAN, weight: 5, opacity: 0.9, lineJoin: 'round', renderer, interactive: false }).addTo(map);
